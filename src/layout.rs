@@ -10,33 +10,33 @@ pub struct Dimensions {
 
     // Surrounding edges:
     padding: EdgeSizes,
-    border: EdgeSizes,
+    pub border: EdgeSizes,
     margin: EdgeSizes
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-struct Rect {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-struct EdgeSizes {
-    left: f32,
-    right: f32,
-    top: f32,
-    bottom: f32,
+pub struct EdgeSizes {
+    pub left: f32,
+    pub right: f32,
+    pub top: f32,
+    pub bottom: f32,
 }
 
 pub struct LayoutBox<'a> {
-    dimensions: Dimensions,
-    box_type: BoxType<'a>,
-    children: Vec<LayoutBox<'a>>,
+    pub dimensions: Dimensions,
+    pub box_type: BoxType<'a>,
+    pub children: Vec<LayoutBox<'a>>,
 }
 
-enum BoxType<'a> {
+pub enum BoxType<'a> {
     BlockNode(&'a StyledNode<'a>),
     InlineNode(&'a StyledNode<'a>),
     AnonymousBlock,
@@ -50,19 +50,19 @@ pub enum Display {
 
 impl<'a> StyledNode<'a> {
     /// Return the specified value of a property if it exists, otherwise `None`.
-    pub fn value(&self, name: &str) -> Option<Value> {
+    pub fn value (&self, name: &str) -> Option<Value> {
         self.specified_values.get(name).map(|v| v.clone())
     }
 
     /// Return the specified value of property `name`, or property `fallback_name` if that doesn't
     /// exist. or value `default` if neither does.
-    pub fn lookup(&self, name: &str, fallback_name: &str, default: &Value) -> Value {
+    pub fn lookup (&self, name: &str, fallback_name: &str, default: &Value) -> Value {
         self.value(name).unwrap_or_else(|| self.value(fallback_name)
                         .unwrap_or_else(|| default.clone()))
     }
 
     /// The value of the `display` property (defaults to inline).
-    pub fn display(&self) -> Display {
+    pub fn display (&self) -> Display {
         match self.value("display") {
             Some(Value::Keyword(s)) => match &*s {
                 "block" => Display::Block,
@@ -75,7 +75,7 @@ impl<'a> StyledNode<'a> {
 }
 
 /// Transform a style tree into a layout tree.
-pub fn layout_tree<'a>(node: &'a StyledNode<'a>, mut containing_block: Dimensions) -> LayoutBox<'a> {
+pub fn layout_tree<'a> (node: &'a StyledNode<'a>, mut containing_block: Dimensions) -> LayoutBox<'a> {
     // The layout algorithm expects the container height to start at 0.
     // TODO: Save the initial containing block height, for calculating percent heights.
     containing_block.content.height = 0.0;
@@ -86,7 +86,7 @@ pub fn layout_tree<'a>(node: &'a StyledNode<'a>, mut containing_block: Dimension
 }
 
 // Build the tree of LayoutBoxes, but don't perform any layout calculations yet.
-fn build_layout_tree<'a>(style_node: &'a StyledNode<'a>) -> LayoutBox<'a> {
+fn build_layout_tree<'a> (style_node: &'a StyledNode<'a>) -> LayoutBox<'a> {
     // Create the root box.
     let mut root = LayoutBox::new(match style_node.display() {
         Display::Block => BoxType::BlockNode(style_node),
@@ -97,8 +97,12 @@ fn build_layout_tree<'a>(style_node: &'a StyledNode<'a>) -> LayoutBox<'a> {
     // Create the descendant boxes.
     for child in &style_node.children {
         match child.display() {
-            Display::Block => root.children.push(build_layout_tree(child)),
-            Display::Inline => root.get_inline_container().children.push(build_layout_tree(child)),
+            Display::Block => {
+                root.children.push(build_layout_tree(child));
+            },
+            Display::Inline => {
+                root.get_inline_container().children.push(build_layout_tree(child));
+            },
             Display::None => {} // Skip nodes with `display: none;`
         }
     }
@@ -107,7 +111,7 @@ fn build_layout_tree<'a>(style_node: &'a StyledNode<'a>) -> LayoutBox<'a> {
 
 impl<'a> LayoutBox<'a> {
     // Constructor function
-    fn new(box_type: BoxType) -> LayoutBox {
+    fn new (box_type: BoxType) -> LayoutBox {
         LayoutBox {
             box_type: box_type,
             dimensions: Default::default(), // initially set all fields to 0.0
@@ -115,7 +119,7 @@ impl<'a> LayoutBox<'a> {
         }
     }
 
-    fn get_style_node(&self) -> &'a StyledNode<'a> {
+    fn get_style_node (&self) -> &'a StyledNode<'a> {
         match self.box_type {
             BoxType::BlockNode(node) => node,
             BoxType::InlineNode(node) => node,
@@ -124,7 +128,7 @@ impl<'a> LayoutBox<'a> {
     }
 
     // Where a new inline child should go.
-    fn get_inline_container(&'a mut self) -> &mut LayoutBox {
+    fn get_inline_container (&mut self) -> &mut LayoutBox<'a> {
         match self.box_type {
             BoxType::InlineNode(_) | BoxType::AnonymousBlock => self,
             BoxType::BlockNode(_) => {
@@ -140,7 +144,7 @@ impl<'a> LayoutBox<'a> {
     }
 
     // Lay out a box and its descendants.
-    fn layout(&mut self, containing_block: Dimensions) {
+    fn layout (&mut self, containing_block: Dimensions) {
         match self.box_type {
             BoxType::BlockNode(_) => self.layout_block(containing_block),
             BoxType::InlineNode(_) => {} // TODO
@@ -148,7 +152,7 @@ impl<'a> LayoutBox<'a> {
         }
     }
 
-    fn layout_block(&mut self, containing_block: Dimensions) {
+    fn layout_block (&mut self, containing_block: Dimensions) {
         // Child width can depend on parent width, so we need to calculate
         // this box's width before laying out its children.
         self.calculate_block_width(containing_block);
@@ -164,7 +168,7 @@ impl<'a> LayoutBox<'a> {
         self.calculate_block_height();
     }
 
-    fn calculate_block_width(&mut self, containing_block: Dimensions) {
+    fn calculate_block_width (&mut self, containing_block: Dimensions) {
         let style = self.get_style_node();
 
         // `width` has initial value `auto`.
@@ -183,7 +187,7 @@ impl<'a> LayoutBox<'a> {
         let padding_left = style.lookup("padding-left", "padding", &zero);
         let padding_right = style.lookup("padding-right", "padding", &zero);
 
-        let total: f32 = [
+        let total: f32 = sum([
             &margin_left,
             &margin_right,
             &border_left,
@@ -191,7 +195,8 @@ impl<'a> LayoutBox<'a> {
             &padding_left,
             &padding_right,
             &width
-        ].iter().map(|v| v.to_px()).sum();
+        ].iter()
+         .map(|v| v.to_px()));
 
         // If width is not auto and the total is wider than the container, treat auto margins as 0.
         if width != auto && total > containing_block.content.width {
@@ -254,7 +259,7 @@ impl<'a> LayoutBox<'a> {
     /// http://www.w3.org/TR/CSS2/visudet.html#normal-block
     ///
     /// Sets the vertical margin/padding/border dimensions, and the `x`, `y` values.
-    fn calculate_block_position(&mut self, containing_block: Dimensions) {
+    fn calculate_block_position (&mut self, containing_block: Dimensions) {
         let style = self.get_style_node();
         let d = &mut self.dimensions;
 
@@ -277,7 +282,7 @@ impl<'a> LayoutBox<'a> {
         d.content.y = containing_block.content.height + containing_block.content.y + d.margin.top + d.border.top + d.padding.top;
     }
 
-    fn layout_block_children(&mut self) {
+    fn layout_block_children (&mut self) {
         let d = &mut self.dimensions;
         for child in &mut self.children {
             child.layout(*d);
@@ -286,7 +291,7 @@ impl<'a> LayoutBox<'a> {
         }
     }
 
-    fn calculate_block_height(&mut self) {
+    fn calculate_block_height (&mut self) {
         // If the height is set to an explicit length, use that exact length.
         // Otherwise, just keep the value set by `layout_block_children`.
         if let Some(Value::Length(h, Unit::Px)) = self.get_style_node().value("height") {
@@ -297,21 +302,21 @@ impl<'a> LayoutBox<'a> {
 
 impl Dimensions {
     // The area covered by the content area plus its padding.
-    fn padding_box(self) -> Rect {
+    pub fn padding_box (self) -> Rect {
         self.content.expanded_by(self.padding)
     }
     // The area covered by the content area plus padding and borders.
-    fn border_box(self) -> Rect {
+    pub fn border_box (self) -> Rect {
         self.padding_box().expanded_by(self.border)
     }
     // The area covered by the content area plus padding, borders, and margin.
-    fn margin_box(self) -> Rect {
+    pub fn margin_box (self) -> Rect {
         self.border_box().expanded_by(self.margin)
     }
 }
 
 impl Rect {
-    fn expanded_by(self, edge: EdgeSizes) -> Rect {
+    fn expanded_by (self, edge: EdgeSizes) -> Rect {
         Rect {
             x: self.x - edge.left,
             y: self.y - edge.top,
@@ -321,6 +326,6 @@ impl Rect {
     }
 }
 
-fn sum<I>(iter: I) -> f32 where I: Iterator<Item=f32> {
+fn sum<I> (iter: I) -> f32 where I: Iterator<Item=f32> {
     iter.fold(0., |a, b| a + b)
 }

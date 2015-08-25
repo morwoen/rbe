@@ -8,14 +8,14 @@ use std::collections::{ HashMap };
 use css::{ Stylesheet, Selector, SimpleSelector, Value, Specificity, Rule };
 use dom::{ ElementData, Node, NodeType };
 
-type PropertyMap = HashMap<String, Value>;
+pub type PropertyMap = HashMap<String, Value>;
 type MatchedRule<'a> = (Specificity, &'a Rule);
 
 #[derive(Debug)]
 pub struct StyledNode<'a> {
     node: &'a Node,
-    specified_value: PropertyMap,
-    children: Vec<StyledNode<'a>>
+    pub specified_values: PropertyMap,
+    pub children: Vec<StyledNode<'a>>
 }
 
 fn matches (elem: &ElementData, selector: &Selector) -> bool {
@@ -66,7 +66,7 @@ fn specified_values (elem: &ElementData, stylesheet: &Stylesheet) -> PropertyMap
 pub fn style_tree<'a> (root: &'a Node, stylesheet: &'a Stylesheet) -> StyledNode<'a> {
     StyledNode {
         node: root,
-        specified_value: match root.node_type {
+        specified_values: match root.node_type {
             NodeType::Element(ref elem) => specified_values(elem, stylesheet),
             NodeType::Text(_) => HashMap::new()
         },

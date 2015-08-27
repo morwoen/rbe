@@ -1,4 +1,7 @@
 [package]
 name = "rbe"
 version = "0.1.0"
-authors = ["Georgi"]
+authors = ["Georgi Morwoen"]
+
+[dependencies]
+sdl2 = "0.8"
